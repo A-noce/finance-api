@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@shared/*": ["src/shared/*"],
+      "@decorator/*": ["src/decorator/*"],
+      "@interceptor/*": ["src/interceptor/*"],
+      "@typing/*": ["src/typing/*"],
+      "@guards/*": ["src/guards/*"],
+      "@auth/*": ["src/auth/*"],
+      "@user/*": ["src/user/*"],
+      "@tag/*": ["src/tag/*"],
+      "@tag-history/*": ["src/tag-history/*"],
+      "@transaction/*": ["src/transaction/*"],
+      "@transaction-history/*": ["src/transaction-history/*"],
+      "@transaction-tag/*": ["src/transaction-tag/*"],
+      "@transaction-tag-history/*": ["src/transaction-tag-history/*"],
+    },
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false
+  }
+}
