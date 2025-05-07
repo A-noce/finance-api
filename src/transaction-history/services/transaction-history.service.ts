@@ -1,16 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TagHistory } from '@tag-history/entity/tag-history.entity';
 import { TagHistoryService } from '@tag-history/services/tag-history.service';
 import { CreateTransactionHistoryRequestDTO } from '@transaction-history/dtos/create-transaction-history.request.dto';
+import { GenerateTransactionHistoryRequestDTO } from '@transaction-history/dtos/generater-transaction-history.request.dto ';
 import { TransactionHistory } from '@transaction-history/entity/transaction-history.entity';
 import { TransactionTagHistory } from '@transaction-tag-history/entity/transaction-tag-history.entity';
 import { TransactionTag } from '@transaction-tag/entity/transaction-tag.entity';
 import { Transaction } from '@transaction/entity/transaction.entity';
 import { TransactionTypeEnum } from '@typing/enums';
 import { UserService } from '@user/services/user.service';
-import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { eachDayOfInterval, endOfMonth, startOfDay, startOfMonth } from 'date-fns';
+import { DataSource, EntityManager, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
 @Injectable()
 export class TransactionHistoryService {
@@ -57,7 +58,7 @@ export class TransactionHistoryService {
       );
       return transactionHistory.id;
     });
-    return this.findById(transactionId);
+    return await this.findById(transactionId);
   }
 
   public async updateTransactionHistory(id: number, dto: any) {
@@ -120,6 +121,15 @@ export class TransactionHistoryService {
     });
   }
 
+  public async generateTransactionHistory(dto: GenerateTransactionHistoryRequestDTO) {
+    const transactionHistoryWithdate = await this.repository.findOneBy({date: MoreThanOrEqual(dto.date), transaction: Not(IsNull())})
+    if(transactionHistoryWithdate) {
+      throw new ConflictException(`Process transaction History already ran for ${dto.date}`)
+    }
+    const transactions = await this.dataSource.getRepository(Transaction).find()
+    await Promise.all(transactions.map(this.createTransactionHistoryFromTransaction))
+  }
+
   private createTransactionHistoryDTO(
     transaction: Transaction,
   ): Partial<CreateTransactionHistoryRequestDTO>[] {
@@ -146,7 +156,7 @@ export class TransactionHistoryService {
             description,
             listInputTagId,
             listOutputTagId,
-            date: day.toISOString(),
+            date: day.toLocaleDateString(),
             userId,
           });
         }

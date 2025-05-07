@@ -1,9 +1,10 @@
 import { Between, FindManyOptions, In, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
 import { Transaction } from '@transaction/entity/transaction.entity';
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { PaginationParamDTO } from '@shared/dtos/PaginationParam.dto';
 import { parseISO } from 'date-fns';
 import { TransactionPeriodEnum } from '@typing/enums';
+import { Type } from 'class-transformer';
 
 export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
   @IsString()
@@ -18,6 +19,16 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
   @IsOptional()
   periodicity: TransactionPeriodEnum[]
 
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  minimumValue?: number
+
+  @IsNumber()
+  @Type(() => Number)
+  @IsOptional()
+  maximumValue?: number
+
   @IsString()
   @IsOptional()
   startDate: string;
@@ -28,7 +39,7 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
 
   public buildFilter() {
     const query: FindManyOptions<Transaction> = {};
-    const {title, description, periodicity, startDate, endtDate } = this;
+    const {title, description, periodicity, startDate, endtDate, minimumValue, maximumValue } = this;
 
     if (title) {
       const param: FindManyOptions<Transaction> = {
@@ -54,14 +65,32 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
       };
       Object.assign(query, param);
     }
-    if (startDate && !endtDate) {
+
+    if (minimumValue && !maximumValue) {
       const param: FindManyOptions<Transaction> = {
         where: {
-          createdAt: MoreThanOrEqual(parseISO(startDate)),
+         value: MoreThanOrEqual(minimumValue),
         },
       };
       Object.assign(query, param);
     }
+    if (!minimumValue && maximumValue) {
+      const param: FindManyOptions<Transaction> = {
+        where: {
+          value: LessThanOrEqual(maximumValue)
+        },
+      };
+      Object.assign(query, param);
+    }
+    if (minimumValue && maximumValue) {
+      const param: FindManyOptions<Transaction> = {
+        where: {
+          value: Between(minimumValue, maximumValue),
+        },
+      };
+      Object.assign(query, param);
+    }
+
     if (!startDate && endtDate) {
       const param: FindManyOptions<Transaction> = {
         where: {

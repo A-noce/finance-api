@@ -20,6 +20,10 @@ export class CreateTransactionRequestDTO {
 
     @IsNumber()
     @IsNotEmpty()
+    value: number
+
+    @IsNumber()
+    @IsNotEmpty()
     userId: number
 
     @IsArray()

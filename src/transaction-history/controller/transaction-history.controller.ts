@@ -10,17 +10,22 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CreateTransactionHistoryRequestDTO } from '@transaction-history/dtos/create-transaction-history.request.dto';
+import { GenerateTransactionHistoryRequestDTO } from '@transaction-history/dtos/generater-transaction-history.request.dto ';
 import { TransactionHistoryService } from '@transaction-history/services/transaction-history.service';
 import { UpdateTransactiopnRequestDTO } from '@transaction/dtos/update-transaction.request.dto';
 
 @Controller('transaction-history')
-@UseGuards(JwtAuthGuard)
 export class TransactionController {
   constructor(private readonly service: TransactionHistoryService) {}
 
   @Post()
   async createTransactionHistory(@Body() body: CreateTransactionHistoryRequestDTO) {
     return this.service.createTransactionHistory(body);
+  }
+
+  @Post('/generate-transaction')
+  async genereteTransactionHistory(@Body() body: GenerateTransactionHistoryRequestDTO) {
+    return this.service.generateTransactionHistory(body);
   }
 
   @Patch(':id')
