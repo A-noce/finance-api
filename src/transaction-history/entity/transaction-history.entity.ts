@@ -1,26 +1,22 @@
 import { GenericEntity } from '@shared/entity/Generic.entity';
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Transaction } from '@transaction/entity/transaction.entity';
 import { User } from '@user/entity/user.entity';
 import { TransactionTagHistory } from 'src/transaction-tag-history/entity/transaction-tag-history.entity';
 
 @Entity('transaction_history')
 export class TransactionHistory extends GenericEntity {
-
   @Column()
   title: string;
 
   @Column()
   description: string;
 
-  @Column({ type: 'date'})
+  @Column({ type: 'date' })
   date: string;
+
+  @Column({ default: 0 })
+  value: number;
 
   @OneToMany(
     () => TransactionTagHistory,
@@ -28,12 +24,15 @@ export class TransactionHistory extends GenericEntity {
   )
   transactionTag: TransactionTagHistory[];
 
-  @ManyToOne(() => Transaction, (transaction) => transaction.transactionHistory, { nullable: true})
-  @JoinColumn({ name: 'transaction_id'  })
+  @ManyToOne(
+    () => Transaction,
+    (transaction) => transaction.transactionHistory,
+    { nullable: true },
+  )
+  @JoinColumn({ name: 'transaction_id' })
   transaction: Transaction;
 
   @ManyToOne(() => User, (user) => user.transactionHistory)
   @JoinColumn({ name: 'user_id' })
   user: User;
-
 }

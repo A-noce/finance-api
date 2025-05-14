@@ -16,5 +16,5 @@ export class TransactionTagHistory extends GenericEntity {
   
 
     @Column({ name: 'transaction_type'})
-    tansactionType: TransactionTypeEnum
+    transactionType: TransactionTypeEnum
 }

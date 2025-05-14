@@ -1,3 +1,4 @@
+import { IsPeriodValueCorrect } from "@shared/decorator/is-period-value-correct";
 import { TransactionPeriodEnum } from "@typing/enums";
 import { ArrayMinSize, IsArray, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
@@ -13,8 +14,8 @@ export class CreateTransactionRequestDTO {
     @IsEnum(TransactionPeriodEnum)
     @IsNotEmpty()
     periodicity: TransactionPeriodEnum
-
-    @IsString()
+ 
+    @IsPeriodValueCorrect()
     @IsNotEmpty()
     periodValue: string
 

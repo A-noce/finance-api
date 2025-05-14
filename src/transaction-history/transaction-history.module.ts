@@ -6,6 +6,7 @@ import { TransactionModule } from '@transaction/transaction.module';
 import { UserModule } from '@user/user.module';
 import { TransactionTagHistoryModule } from '@transaction-tag-history/transaction-tag-history.module';
 import { TagHistoryModule } from '@tag-history/tag-history.module';
+import { TransactionHistoryController } from './controller/transaction-history.controller';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { TagHistoryModule } from '@tag-history/tag-history.module';
     UserModule,
     TagHistoryModule
   ],
-  controllers: [],
+  controllers: [TransactionHistoryController],
   providers: [TransactionHistoryService],
 })
 export class TransactionHistoryModule {}

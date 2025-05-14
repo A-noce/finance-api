@@ -1,17 +1,36 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ResponseDTO } from '@shared/dtos/ResponseDTO';
 import { TagHistory } from '@tag-history/entity/tag-history.entity';
 import { TagHistoryService } from '@tag-history/services/tag-history.service';
 import { CreateTransactionHistoryRequestDTO } from '@transaction-history/dtos/create-transaction-history.request.dto';
+import { FilterTransactionHistoryParamsRequestDTO } from '@transaction-history/dtos/filter-transacrion-history-params.request.dto';
 import { GenerateTransactionHistoryRequestDTO } from '@transaction-history/dtos/generater-transaction-history.request.dto ';
+import { TransactionHistoryResponseDTO } from '@transaction-history/dtos/transaction-history.response.dto';
 import { TransactionHistory } from '@transaction-history/entity/transaction-history.entity';
 import { TransactionTagHistory } from '@transaction-tag-history/entity/transaction-tag-history.entity';
 import { TransactionTag } from '@transaction-tag/entity/transaction-tag.entity';
 import { Transaction } from '@transaction/entity/transaction.entity';
 import { TransactionTypeEnum } from '@typing/enums';
 import { UserService } from '@user/services/user.service';
-import { eachDayOfInterval, endOfMonth, startOfDay, startOfMonth } from 'date-fns';
-import { DataSource, EntityManager, IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  startOfDay,
+  startOfMonth,
+} from 'date-fns';
+import {
+  DataSource,
+  EntityManager,
+  IsNull,
+  MoreThanOrEqual,
+  Not,
+  Repository,
+} from 'typeorm';
 
 @Injectable()
 export class TransactionHistoryService {
@@ -27,8 +46,15 @@ export class TransactionHistoryService {
     return await this.repository.findOneBy({ id });
   }
 
-  public async findByParam(param: any) {
-    return await this.repository.find(param.buildFilter());
+  public async findByParam(param: FilterTransactionHistoryParamsRequestDTO) {
+    const [data, total] = await this.repository.findAndCount({
+      ...param.buildFilter(),
+      relations: ['transactionTag.tagHistory'],
+    });
+    return new ResponseDTO().setBody({
+      data: data.map(TransactionHistoryResponseDTO.toDTO),
+      total,
+    });
   }
 
   public async createTransactionHistory(
@@ -87,7 +113,7 @@ export class TransactionHistoryService {
     await Promise.all(promiseList);
   }
 
-  public async createTransactionHistoryFromTransaction(
+  private async createTransactionHistoryFromTransaction(
     transation: Transaction,
   ) {
     const dtoList = this.createTransactionHistoryDTO(transation);
@@ -121,13 +147,40 @@ export class TransactionHistoryService {
     });
   }
 
-  public async generateTransactionHistory(dto: GenerateTransactionHistoryRequestDTO) {
-    const transactionHistoryWithdate = await this.repository.findOneBy({date: MoreThanOrEqual(dto.date), transaction: Not(IsNull())})
-    if(transactionHistoryWithdate) {
-      throw new ConflictException(`Process transaction History already ran for ${dto.date}`)
+  public async generateTransactionHistory(
+    dto: GenerateTransactionHistoryRequestDTO,
+  ) {
+    const transactionHistoryWithdate = await this.repository.findOne({
+      where: {
+        date: MoreThanOrEqual(dto.date),
+        transaction: { id: dto?.transactionId },
+      },
+      relations: ['transaction'],
+    });
+    if (transactionHistoryWithdate) {
+      throw new ConflictException(
+        `Process transaction History already ran for ${dto.date}`,
+      );
     }
-    const transactions = await this.dataSource.getRepository(Transaction).find()
-    await Promise.all(transactions.map(this.createTransactionHistoryFromTransaction))
+    let transactions: Transaction[] = [];
+    const transactionRepository = this.dataSource.getRepository(Transaction);
+    const relations = [
+      'user',
+      'transactionTag',
+      'transactionTag.tag',
+      'transactionTag.tag.tagHistory',
+    ];
+    if (!dto.transactionId) {
+      transactions = await transactionRepository.find({ relations });
+    } else {
+      transactions = await transactionRepository.find({
+        where: { id: dto.transactionId },
+        relations,
+      });
+    }
+    await Promise.all(
+      transactions.map((t) => this.createTransactionHistoryFromTransaction(t)),
+    );
   }
 
   private createTransactionHistoryDTO(
@@ -136,11 +189,10 @@ export class TransactionHistoryService {
     const {
       description,
       title,
-      formatedPeriod,
       transactionTag,
       user: { id: userId },
     } = transaction;
-    const date = formatedPeriod();
+    const date = transaction.formatedPeriod();
     const { listInputTagId, listOutputTagId } =
       this.getTagHistoryIdFromTransaction(transactionTag);
     const request: CreateTransactionHistoryRequestDTO[] = [];
