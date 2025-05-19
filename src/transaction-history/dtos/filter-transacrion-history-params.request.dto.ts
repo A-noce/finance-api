@@ -1,6 +1,19 @@
-import { Between, FindManyOptions, In, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
+import {
+  Between,
+  FindManyOptions,
+  In,
+  LessThanOrEqual,
+  Like,
+  MoreThanOrEqual,
+} from 'typeorm';
 import { Transaction } from '@transaction/entity/transaction.entity';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { PaginationParamDTO } from '@shared/dtos/PaginationParam.dto';
 import { parseISO } from 'date-fns';
 import { TransactionPeriodEnum } from '@typing/enums';
@@ -18,17 +31,17 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
 
   @IsArray()
   @IsOptional()
-  periodicity: TransactionPeriodEnum[]
+  periodicity: TransactionPeriodEnum[];
 
   @IsNumber()
   @Type(() => Number)
   @IsOptional()
-  minimumValue?: number
+  minimumValue?: number;
 
   @IsNumber()
   @Type(() => Number)
   @IsOptional()
-  maximumValue?: number
+  maximumValue?: number;
 
   @IsString()
   @IsOptional()
@@ -38,9 +51,22 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
   @IsOptional()
   endtDate: string;
 
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  tag: number[];
+
   public buildFilter() {
     const query: FindManyOptions<TransactionHistory> = {};
-    const {title, description, periodicity, startDate, endtDate, minimumValue, maximumValue } = this;
+    const {
+      title,
+      description,
+      startDate,
+      endtDate,
+      minimumValue,
+      maximumValue,
+      tag,
+    } = this;
 
     if (title) {
       const param: FindManyOptions<TransactionHistory> = {
@@ -62,7 +88,7 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
     if (minimumValue && !maximumValue) {
       const param: FindManyOptions<TransactionHistory> = {
         where: {
-         value: MoreThanOrEqual(minimumValue),
+          value: MoreThanOrEqual(minimumValue),
         },
       };
       Object.assign(query, param);
@@ -70,7 +96,7 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
     if (!minimumValue && maximumValue) {
       const param: FindManyOptions<TransactionHistory> = {
         where: {
-          value: LessThanOrEqual(maximumValue)
+          value: LessThanOrEqual(maximumValue),
         },
       };
       Object.assign(query, param);
@@ -79,6 +105,15 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
       const param: FindManyOptions<TransactionHistory> = {
         where: {
           value: Between(minimumValue, maximumValue),
+        },
+      };
+      Object.assign(query, param);
+    }
+
+    if(tag && tag.length){
+            const param: FindManyOptions<TransactionHistory> = {
+        where: {
+          transactionTag: {id: In(tag)}
         },
       };
       Object.assign(query, param);
@@ -107,7 +142,7 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
         },
       };
       Object.assign(query, param);
-    }    
+    }
     Object.assign(query, this.buildPaginationParams());
     return query;
   }

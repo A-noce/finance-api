@@ -14,7 +14,7 @@ export function IsPeriodValueCorrect(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: any, _args: ValidationArguments) {
-          if (typeof value === 'string' && /^[1-9]$|^[12][0-9]$|^3[01]$/.test(value)) {
+          if (typeof value === 'string' && /^(0?[1-9]|[12][0-9]|3[01])$/.test(value)) {
             return true;
           }
 

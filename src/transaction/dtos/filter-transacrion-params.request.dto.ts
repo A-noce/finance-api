@@ -7,10 +7,16 @@ import {
   MoreThanOrEqual,
 } from 'typeorm';
 import { Transaction } from '@transaction/entity/transaction.entity';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { PaginationParamDTO } from '@shared/dtos/PaginationParam.dto';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
-import { TransactionPeriodEnum } from '@typing/enums';
+import { TransactionPeriodEnum, TransactionTypeEnum } from '@typing/enums';
 import { Type } from 'class-transformer';
 
 export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
@@ -44,6 +50,16 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
   @IsOptional()
   endtDate: string;
 
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  listInputTagId: number[];
+
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  listOutputTagId: number[];
+
   public buildFilter() {
     const query: FindManyOptions<Transaction> = {};
     const {
@@ -54,6 +70,8 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
       endtDate,
       minimumValue,
       maximumValue,
+      listInputTagId,
+      listOutputTagId,
     } = this;
 
     if (title) {
@@ -76,6 +94,28 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
       const param: FindManyOptions<Transaction> = {
         where: {
           periodicity: In(periodicity),
+        },
+      };
+      Object.assign(query, param);
+    }
+    if (listInputTagId) {
+      const param: FindManyOptions<Transaction> = {
+        where: {
+          transactionTag: {
+            id: In(listInputTagId),
+            transactionType: TransactionTypeEnum.INPUT,
+          },
+        },
+      };
+      Object.assign(query, param);
+    }
+    if (listOutputTagId) {
+      const param: FindManyOptions<Transaction> = {
+        where: {
+          transactionTag: {
+            id: In(listOutputTagId),
+            transactionType: TransactionTypeEnum.OUTPUT,
+          },
         },
       };
       Object.assign(query, param);

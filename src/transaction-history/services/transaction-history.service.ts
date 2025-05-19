@@ -20,13 +20,11 @@ import { UserService } from '@user/services/user.service';
 import {
   eachDayOfInterval,
   endOfMonth,
-  startOfDay,
   startOfMonth,
 } from 'date-fns';
 import {
   DataSource,
   EntityManager,
-  IsNull,
   MoreThanOrEqual,
   Not,
   Repository,
@@ -52,7 +50,7 @@ export class TransactionHistoryService {
       relations: ['transactionTag.tagHistory'],
     });
     return new ResponseDTO().setBody({
-      data: data.map(TransactionHistoryResponseDTO.toDTO),
+      data: data.map((t) => TransactionHistoryResponseDTO.toDTO(t, param.tag)),
       total,
     });
   }
