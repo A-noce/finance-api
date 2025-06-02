@@ -17,7 +17,7 @@ import {
 import { PaginationParamDTO } from '@shared/dtos/PaginationParam.dto';
 import { parseISO } from 'date-fns';
 import { TransactionPeriodEnum } from '@typing/enums';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { TransactionHistory } from '@transaction-history/entity/transaction-history.entity';
 
 export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO {
@@ -49,11 +49,12 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
 
   @IsString()
   @IsOptional()
-  endtDate: string;
+  endDate: string;
 
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
+  @Transform(({ value }) => value.split(',').map(Number))
   tag: number[];
 
   public buildFilter() {
@@ -62,7 +63,7 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
       title,
       description,
       startDate,
-      endtDate,
+      endDate,
       minimumValue,
       maximumValue,
       tag,
@@ -110,35 +111,35 @@ export class FilterTransactionHistoryParamsRequestDTO extends PaginationParamDTO
       Object.assign(query, param);
     }
 
-    if(tag && tag.length){
-            const param: FindManyOptions<TransactionHistory> = {
+    if (tag && tag.length) {
+      const param: FindManyOptions<TransactionHistory> = {
         where: {
-          transactionTag: {id: In(tag)}
+          transactionTag: {tagHistory: {id: In(tag)}},
         },
       };
       Object.assign(query, param);
     }
 
-    if (startDate && !endtDate) {
+    if (startDate && !endDate) {
       const param: FindManyOptions<TransactionHistory> = {
         where: {
-          date: LessThanOrEqual(endtDate),
+          date: LessThanOrEqual(endDate),
         },
       };
       Object.assign(query, param);
     }
-    if (!startDate && endtDate) {
+    if (!startDate && endDate) {
       const param: FindManyOptions<TransactionHistory> = {
         where: {
-          date: LessThanOrEqual(endtDate),
+          date: LessThanOrEqual(endDate),
         },
       };
       Object.assign(query, param);
     }
-    if (startDate && endtDate) {
+    if (startDate && endDate) {
       const param: FindManyOptions<TransactionHistory> = {
         where: {
-          date: Between(startDate, endtDate),
+          date: Between(startDate, endDate),
         },
       };
       Object.assign(query, param);

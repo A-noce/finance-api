@@ -1,3 +1,4 @@
+import { Transaction } from '@transaction/entity/transaction.entity';
 import {
   ArrayMinSize,
   IsArray,
@@ -23,6 +24,10 @@ export class CreateTransactionHistoryRequestDTO {
 
   @IsNumber()
   @IsNotEmpty()
+  value: number;
+
+  @IsNumber()
+  @IsNotEmpty()
   userId: number;
 
   @IsArray()
@@ -34,4 +39,8 @@ export class CreateTransactionHistoryRequestDTO {
   @IsInt({ each: true })
   @IsOptional()
   listOutputTagId: number[];
+
+  @IsNumber()
+  @IsOptional()
+  transaction: Transaction
 }

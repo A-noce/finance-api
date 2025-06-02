@@ -17,7 +17,7 @@ import {
 import { PaginationParamDTO } from '@shared/dtos/PaginationParam.dto';
 import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import { TransactionPeriodEnum, TransactionTypeEnum } from '@typing/enums';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
   @IsString()
@@ -52,11 +52,13 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
 
   @IsArray()
   @IsInt({ each: true })
+  @Transform(({ value }) => value.split(',').map(Number))
   @IsOptional()
   listInputTagId: number[];
 
   @IsArray()
   @IsInt({ each: true })
+  @Transform(({ value }) => value.split(',').map(Number))
   @IsOptional()
   listOutputTagId: number[];
 
@@ -102,7 +104,7 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
       const param: FindManyOptions<Transaction> = {
         where: {
           transactionTag: {
-            id: In(listInputTagId),
+            tag: {id: In(listInputTagId)},
             transactionType: TransactionTypeEnum.INPUT,
           },
         },
@@ -113,7 +115,7 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
       const param: FindManyOptions<Transaction> = {
         where: {
           transactionTag: {
-            id: In(listOutputTagId),
+            tag: {id: In(listOutputTagId)},
             transactionType: TransactionTypeEnum.OUTPUT,
           },
         },

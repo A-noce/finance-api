@@ -189,6 +189,7 @@ export class TransactionHistoryService {
       title,
       transactionTag,
       user: { id: userId },
+      value
     } = transaction;
     const date = transaction.formatedPeriod();
     const { listInputTagId, listOutputTagId } =
@@ -204,10 +205,12 @@ export class TransactionHistoryService {
           request.push({
             title,
             description,
+            value,
             listInputTagId,
             listOutputTagId,
             date: day.toLocaleDateString(),
             userId,
+            transaction
           });
         }
       });
@@ -215,10 +218,12 @@ export class TransactionHistoryService {
       request.push({
         title,
         description,
+        value,
         listInputTagId,
         listOutputTagId,
         date,
         userId,
+        transaction
       });
     }
     return request;

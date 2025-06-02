@@ -28,6 +28,8 @@ export class TransactionHistoryResponseDTO {
     response.id = transaction.id;
     response.title = transaction.title;
     response.description = transaction.description;
+    response.date = transaction.date
+    response.value = transaction.value
     response.inputTagList = inputList.map(({  tagHistory }) =>
       plainToInstance(TagHistoryResponseDTO, tagHistory, { excludeExtraneousValues: true }),
     );
