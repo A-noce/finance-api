@@ -48,7 +48,7 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
 
   @IsString()
   @IsOptional()
-  endtDate: string;
+  endDate: string;
 
   @IsArray()
   @IsInt({ each: true })
@@ -61,120 +61,4 @@ export class FilterTransactionParamsRequestDTO extends PaginationParamDTO {
   @Transform(({ value }) => value.split(',').map(Number))
   @IsOptional()
   listOutputTagId: number[];
-
-  public buildFilter() {
-    const query: FindManyOptions<Transaction> = {};
-    const {
-      title,
-      description,
-      periodicity,
-      startDate,
-      endtDate,
-      minimumValue,
-      maximumValue,
-      listInputTagId,
-      listOutputTagId,
-    } = this;
-
-    if (title) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          title: Like(title),
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (description) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          description: Like(description),
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (periodicity) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          periodicity: In(periodicity),
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (listInputTagId) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          transactionTag: {
-            tag: {id: In(listInputTagId)},
-            transactionType: TransactionTypeEnum.INPUT,
-          },
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (listOutputTagId) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          transactionTag: {
-            tag: {id: In(listOutputTagId)},
-            transactionType: TransactionTypeEnum.OUTPUT,
-          },
-        },
-      };
-      Object.assign(query, param);
-    }
-
-    if (minimumValue && !maximumValue) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          value: MoreThanOrEqual(minimumValue),
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (!minimumValue && maximumValue) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          value: LessThanOrEqual(maximumValue),
-        },
-      };
-      Object.assign(query, param);
-    }
-    if (minimumValue && maximumValue) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          value: Between(minimumValue, maximumValue),
-        },
-      };
-      Object.assign(query, param);
-    }
-
-    if (startDate && !endtDate) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          createdAt: MoreThanOrEqual(startOfDay(parseISO(startDate))),
-        },
-      };
-
-      if (!startDate && endtDate) {
-        const param: FindManyOptions<Transaction> = {
-          where: {
-            createdAt: LessThanOrEqual(endOfDay(parseISO(endtDate))),
-          },
-        };
-        Object.assign(query, param);
-      }
-
-      Object.assign(query, param);
-    }
-    if (startDate && endtDate) {
-      const param: FindManyOptions<Transaction> = {
-        where: {
-          createdAt: Between(parseISO(startDate), parseISO(endtDate)),
-        },
-      };
-      Object.assign(query, param);
-    }
-    Object.assign(query, this.buildPaginationParams());
-    return query;
-  }
 }

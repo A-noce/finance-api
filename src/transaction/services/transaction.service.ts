@@ -26,26 +26,33 @@ export class TransactionService {
   public async findById(id: number) {
     return await this.repository.findOne({
       relations: ['transactionTag', 'transactionTag.tag'],
-      where: {id }
+      where: { id },
     });
   }
 
   public async findByParam(param: FilterTransactionParamsRequestDTO) {
-    const [data, total] = await this.repository.findAndCount({...param.buildFilter(), relations: ['transactionTag.tag']});
-    return new ResponseDTO().setBody({ data: data.map(TransactionResponseDTO.toDTO), total})
+    const [data, total] = await this.buildQuery(param).getManyAndCount();
+    return new ResponseDTO().setBody({
+      data: data.map(TransactionResponseDTO.toDTO),
+      total,
+    });
   }
-  
+
   public async findAll() {
-    const [data, total] = await this.repository.findAndCount({relations: ['transactionTag.tag', 'user']});;
-    return { data: data.map(TransactionResponseDTO.toDTO), total}
+    const [data, total] = await this.repository.findAndCount({
+      relations: ['transactionTag.tag', 'user'],
+    });
+    return { data: data.map(TransactionResponseDTO.toDTO), total };
   }
 
   public async createTransaction(dto: CreateTransactionRequestDTO) {
-    const inputTagList = await this.tagService.findTagList(dto.listInputTagId)
-    const outputTagList = await this.tagService.findTagList(dto.listOutputTagId)
-    const user = await this.userService.findById(dto.userId)
+    const inputTagList = await this.tagService.findTagList(dto.listInputTagId);
+    const outputTagList = await this.tagService.findTagList(
+      dto.listOutputTagId,
+    );
+    const user = await this.userService.findById(dto.userId);
     const transactionId = await this.dataSource.transaction(async (manager) => {
-      const entity = manager.create(Transaction, {...dto, user});
+      const entity = manager.create(Transaction, { ...dto, user });
       const transaction = await manager.save(entity);
       await this.createTransactionTag(
         transaction,
@@ -59,9 +66,9 @@ export class TransactionService {
         outputTagList,
         TransactionTypeEnum.OUTPUT,
       );
-      return transaction.id
+      return transaction.id;
     });
-    return await this.findById(transactionId)
+    return await this.findById(transactionId);
   }
 
   public async updateTransaction(
@@ -91,5 +98,107 @@ export class TransactionService {
       return manager.save(payload);
     });
     await Promise.all(promiseList);
+  }
+
+  private buildQuery(dto: FilterTransactionParamsRequestDTO) {
+    const query = this.repository
+      .createQueryBuilder('transaction')
+      .leftJoin('transaction.transactionTag', 'transactionTagFilter')
+      .leftJoin('transactionTagFilter.tag', 'tagFilter')
+      .leftJoinAndSelect(
+        'transaction.transactionTag',
+        'inputTransactionTag',
+      )
+      .leftJoinAndSelect('inputTransactionTag.tag', 'inputTag')
+      .leftJoinAndSelect(
+        'transaction.transactionTag',
+        'outputTransactionTag',
+      )
+      .leftJoinAndSelect('outputTransactionTag.tag', 'outputTag');
+
+    const {
+      title,
+      description,
+      periodicity,
+      startDate,
+      endDate,
+      minimumValue,
+      maximumValue,
+      listInputTagId,
+      listOutputTagId,
+      skip,
+      limit,
+      order,
+    } = dto;
+    query.skip(skip).take(limit);
+
+    if (title) {
+      query.andWhere('transaction.title ILIKE :title', { title: `%${title}%` });
+    }
+
+    if (description) {
+      query.andWhere('transaction.description ILIKE :description', {
+        description: `%${description}%`,
+      });
+    }
+
+    if (periodicity) {
+      query.andWhere('transaction.periodicity = :periodicity', {
+        periodicity,
+      });
+    }
+
+    if (listInputTagId?.length) {
+      query.andWhere(
+        `inputTag.id IN (:...listInputTagId) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.INPUT}'`,
+        {
+          listInputTagId
+        },
+      );
+    }
+
+    if (listOutputTagId?.length) {
+      query.andWhere(
+        `outputTag.id IN (:...listOutputTagId) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.OUTPUT}'`,
+        {
+          listOutputTagId
+        },
+      );
+    }
+
+    if (minimumValue && maximumValue) {
+      query.andWhere(
+        'transaction.value BETWEEN :minimumValue AND :maximumValue',
+        {
+          minimumValue,
+          maximumValue,
+        },
+      );
+    } else if (minimumValue) {
+      query.andWhere('transaction.value >= :minimumValue', { minimumValue });
+    } else if (maximumValue) {
+      query.andWhere('transaction.value <= :maximumValue', { maximumValue });
+    }
+
+    if (startDate && endDate) {
+      query.andWhere('transaction.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    } else if (startDate) {
+      query.andWhere('transaction.createdAt >= :startDate', { startDate });
+    } else if (endDate) {
+      query.andWhere('transaction.createdAt <= :endDate', { endDate });
+    }
+
+    if (order) {
+      const [field, direction] = Object.entries(order)[0];
+      query.orderBy(
+        `transaction.${field}`,
+        direction.toUpperCase() as 'ASC' | 'DESC',
+      );
+    }
+
+    return query;
   }
 }

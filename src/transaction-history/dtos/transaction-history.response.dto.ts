@@ -29,22 +29,21 @@ export class TransactionHistoryResponseDTO {
     response.title = transaction.title;
     response.description = transaction.description;
     response.date = transaction.date
-    response.value = transaction.value
     response.inputTagList = inputList.map(({  tagHistory }) =>
       plainToInstance(TagHistoryResponseDTO, tagHistory, { excludeExtraneousValues: true }),
     );
     response.outputTagList = outputList.map(({ tagHistory }) =>
       plainToInstance(TagHistoryResponseDTO, tagHistory, { excludeExtraneousValues: true }),
     );
-    response.value = this.getRelativeValue(transaction.value, inputList, tag)
+    response.value = response.getRelativeValue(transaction.value, inputList, tag)
     
     response.createdAt = transaction.createdAt.toISOString();
     return response;
   }
 
-  private static getRelativeValue(value: number, inputTags: TransactionTagHistory[], tag?: number[]) {
+   getRelativeValue(value: number, inputTags: TransactionTagHistory[], tag?: number[]) {
     if(!tag?.length) return value
-    const isInput = inputTags.some(({ id }) => tag?.includes(id))
+    const isInput = inputTags.some(({ tagHistory }) => tag?.includes(tagHistory.id))
     const sign = isInput ? -1 : +1
     return sign * value
   }
