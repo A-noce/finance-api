@@ -17,16 +17,10 @@ import { TransactionTag } from '@transaction-tag/entity/transaction-tag.entity';
 import { Transaction } from '@transaction/entity/transaction.entity';
 import { TransactionTypeEnum } from '@typing/enums';
 import { UserService } from '@user/services/user.service';
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  startOfDay,
-  startOfMonth,
-} from 'date-fns';
+import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns';
 import {
   DataSource,
   EntityManager,
-  IsNull,
   MoreThanOrEqual,
   Not,
   Repository,
@@ -43,16 +37,16 @@ export class TransactionHistoryService {
   ) {}
 
   public async findById(id: number) {
-    return await this.repository.findOneBy({ id });
+    return await this.repository.findOne({
+      relations: ['transactionTag', 'transactionTag.tagHistory'],
+      where: { id }
+    });
   }
 
   public async findByParam(param: FilterTransactionHistoryParamsRequestDTO) {
-    const [data, total] = await this.repository.findAndCount({
-      ...param.buildFilter(),
-      relations: ['transactionTag.tagHistory'],
-    });
+    const [data, total] = await this.buildQuery(param).getManyAndCount()
     return new ResponseDTO().setBody({
-      data: data.map(TransactionHistoryResponseDTO.toDTO),
+      data: data.map((t) => TransactionHistoryResponseDTO.toDTO(t, param.tag)),
       total,
     });
   }
@@ -191,6 +185,7 @@ export class TransactionHistoryService {
       title,
       transactionTag,
       user: { id: userId },
+      value,
     } = transaction;
     const date = transaction.formatedPeriod();
     const { listInputTagId, listOutputTagId } =
@@ -206,10 +201,12 @@ export class TransactionHistoryService {
           request.push({
             title,
             description,
+            value,
             listInputTagId,
             listOutputTagId,
             date: day.toLocaleDateString(),
             userId,
+            transaction,
           });
         }
       });
@@ -217,10 +214,12 @@ export class TransactionHistoryService {
       request.push({
         title,
         description,
+        value,
         listInputTagId,
         listOutputTagId,
         date,
         userId,
+        transaction,
       });
     }
     return request;
@@ -238,5 +237,92 @@ export class TransactionHistoryService {
       )
       .map(({ tag }) => tag.tagHistory.id);
     return { listInputTagId, listOutputTagId };
+  }
+
+  private buildQuery(dto: FilterTransactionHistoryParamsRequestDTO) {
+    const query = this.repository
+      .createQueryBuilder('transaction')
+      .leftJoin('transaction.transactionTag', 'transactionTagFilter')
+      .leftJoin('transactionTagFilter.tagHistory', 'tagFilter')
+      .leftJoinAndSelect('transaction.transactionTag', 'inputTransactionTag')
+      .leftJoinAndSelect('inputTransactionTag.tagHistory', 'inputTag')
+      .leftJoinAndSelect('transaction.transactionTag', 'outputTransactionTag')
+      .leftJoinAndSelect('outputTransactionTag.tagHistory', 'outputTag');
+
+    const {
+      title,
+      description,
+      periodicity,
+      startDate,
+      endDate,
+      minimumValue,
+      maximumValue,
+      tag,
+      skip,
+      limit,
+      order,
+    } = dto;
+    query.skip(skip).take(limit);
+
+    if (title) {
+      query.andWhere('transaction.title ILIKE :title', { title: `%${title}%` });
+    }
+
+    if (description) {
+      query.andWhere('transaction.description ILIKE :description', {
+        description: `%${description}%`,
+      });
+    }
+
+    if (periodicity) {
+      query.andWhere('transaction.periodicity = :periodicity', {
+        periodicity,
+      });
+    }
+
+    if (tag?.length) {
+      query.andWhere(
+        `inputTag.id IN (:...tag) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.INPUT}'
+        OR outputTag.id IN (:...tag) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.OUTPUT}'`,
+        {
+          tag,
+        },
+      );
+    }
+
+    if (minimumValue && maximumValue) {
+      query.andWhere(
+        'transaction.value BETWEEN :minimumValue AND :maximumValue',
+        {
+          minimumValue,
+          maximumValue,
+        },
+      );
+    } else if (minimumValue) {
+      query.andWhere('transaction.value >= :minimumValue', { minimumValue });
+    } else if (maximumValue) {
+      query.andWhere('transaction.value <= :maximumValue', { maximumValue });
+    }
+
+    if (startDate && endDate) {
+      query.andWhere('transaction.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    } else if (startDate) {
+      query.andWhere('transaction.createdAt >= :startDate', { startDate });
+    } else if (endDate) {
+      query.andWhere('transaction.createdAt <= :endDate', { endDate });
+    }
+
+    if (order) {
+      const [field, direction] = Object.entries(order)[0];
+      query.orderBy(
+        `transaction.${field}`,
+        direction.toUpperCase() as 'ASC' | 'DESC',
+      );
+    }
+
+    return query;
   }
 }

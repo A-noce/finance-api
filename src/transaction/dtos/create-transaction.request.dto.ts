@@ -29,11 +29,11 @@ export class CreateTransactionRequestDTO {
 
     @IsArray()
     @IsInt({ each: true})
-    @ArrayMinSize(1)
+    @IsOptional()
     listInputTagId: number[]
-
+    
     @IsArray()
     @IsInt({ each: true})
-    @IsOptional()
+    @ArrayMinSize(1)
     listOutputTagId: number[]
 }

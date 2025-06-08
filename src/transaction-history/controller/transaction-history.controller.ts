@@ -23,22 +23,28 @@ export class TransactionHistoryController {
 
   @Post()
   @TransformResponse(TransactionHistoryResponseDTO)
-  async createTransactionHistory(@Body() body: CreateTransactionHistoryRequestDTO) {
+  async createTransactionHistory(
+    @Body() body: CreateTransactionHistoryRequestDTO,
+  ) {
     return this.service.createTransactionHistory(body);
   }
 
-    @Get('filter')
-    async getTagFiltered(@Query() param: FilterTransactionHistoryParamsRequestDTO) {
-      return this.service.findByParam(param);
-    }
+  @Get('filter')
+  async getTagFiltered(
+    @Query() param: FilterTransactionHistoryParamsRequestDTO,
+  ) {
+    return this.service.findByParam(param);
+  }
 
   @Post('/generate')
-  async genereteTransactionHistory(@Body() body: GenerateTransactionHistoryRequestDTO) {
+  async genereteTransactionHistory(
+    @Body() body: GenerateTransactionHistoryRequestDTO,
+  ) {
     return this.service.generateTransactionHistory(body);
   }
 
   @Patch(':id')
-  @TransformResponse(TransactionHistoryResponseDTO)  
+  @TransformResponse(TransactionHistoryResponseDTO)
   async updateTag(
     @Param('id') id: number,
     @Body() dto: UpdateTransactiopnRequestDTO,
@@ -47,7 +53,7 @@ export class TransactionHistoryController {
   }
 
   @Get(':id')
-    @TransformResponse(TransactionHistoryResponseDTO)
+  @TransformResponse(TransactionHistoryResponseDTO)
   async getById(@Param('id') id: number) {
     return this.service.findById(id);
   }
