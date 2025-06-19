@@ -25,38 +25,48 @@ export class AuthService {
 
     return await this.service.createUser(email, saltedPassword);
   }
-  
-  public async singIn({ email, password }: UserLoginRequestDTO, response: Response) {
+
+  public async login(
+    { email, password }: UserLoginRequestDTO,
+    response: Response,
+  ) {
     const user = await this.service.findByEmail(email);
     if (!user) {
       throw new BadRequestException('Invalid credentials');
     }
-    
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid credentials');
     }
-    
-    this.setCookie(user, response)
+
+    this.setCookie(user, response);
     return {
       access_token: this.jwtService.sign({ id: user.id, email: user.email }),
     };
   }
 
   public async checkSession() {
-    return true
+    return true;
+  }
+
+  public async logout(response: Response) {
+    response.cookie('user_session', '', {
+      expires: new Date(0),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      signed: true,
+    });
   }
 
   private setCookie(user: User, response: Response) {
-    response.cookie(
-      'user_session',
-      JSON.stringify(user),
-      {
-        httpOnly: true,
-        secure: this.configService.getOrThrow('application.nodeEnv') === 'production',
-        maxAge: this.configService.getOrThrow('cookie.expiration'),
-        signed: true
-      },
-    );
+    response.cookie('user_session', JSON.stringify(user), {
+      httpOnly: true,
+      secure:
+        this.configService.getOrThrow('application.nodeEnv') === 'production',
+      maxAge: this.configService.getOrThrow('cookie.expiration'),
+      signed: true,
+    });
   }
 }

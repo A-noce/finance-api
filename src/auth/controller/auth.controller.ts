@@ -19,7 +19,7 @@ export class AuthController {
 
   @Post('/login')
   async login(@Body() body: UserLoginRequestDTO, @Res({ passthrough: true}) response: Response){
-    return this.service.singIn(body, response)
+    return this.service.login(body, response)
   }
 
   @Post('/sign-up')
@@ -32,5 +32,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async session(){
     return this.service.checkSession()
+  }
+
+  @Post('/logout')
+  async logout(@Res() response: Response){
+    return this.service.logout(response)
   }
 }
