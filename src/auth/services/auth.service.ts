@@ -43,16 +43,19 @@ export class AuthService {
     };
   }
 
-  public async checkSession() {}
+  public async checkSession() {
+    return true
+  }
 
   private setCookie(user: User, response: Response) {
     response.cookie(
       'user_session',
-      JSON.stringify({ userId: user.id, username: user.email }),
+      JSON.stringify(user),
       {
         httpOnly: true,
         secure: this.configService.getOrThrow('application.nodeEnv') === 'production',
         maxAge: this.configService.getOrThrow('cookie.expiration'),
+        signed: true
       },
     );
   }

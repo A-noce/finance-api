@@ -22,7 +22,7 @@ async function bootstrap() {
     }),
   );
 
-  app.use(cookieParser());
+  app.use(cookieParser(configService.getOrThrow('application.signature')));
 
   await app.listen(configService.get('application.port'));
 }

@@ -16,6 +16,7 @@ import { TransactionTagHistory } from '@transaction-tag-history/entity/transacti
 import { TransactionTag } from '@transaction-tag/entity/transaction-tag.entity';
 import { Transaction } from '@transaction/entity/transaction.entity';
 import { TransactionTypeEnum } from '@typing/enums';
+import { User } from '@user/entity/user.entity';
 import { UserService } from '@user/services/user.service';
 import { eachDayOfInterval, endOfMonth, startOfMonth } from 'date-fns';
 import {
@@ -39,12 +40,19 @@ export class TransactionHistoryService {
   public async findById(id: number) {
     return await this.repository.findOne({
       relations: ['transactionTag', 'transactionTag.tagHistory'],
-      where: { id }
+      where: { id },
     });
   }
 
-  public async findByParam(param: FilterTransactionHistoryParamsRequestDTO) {
-    const [data, total] = await this.buildQuery(param).getManyAndCount()
+  public async findByParam(
+    param: FilterTransactionHistoryParamsRequestDTO,
+    request: Request,
+  ) {
+    const loggedUser: User = request['user'];
+    const [data, total] = await this.buildQuery(
+      param,
+      loggedUser.id,
+    ).getManyAndCount();
     return new ResponseDTO().setBody({
       data: data.map((t) => TransactionHistoryResponseDTO.toDTO(t, param.tag)),
       total,
@@ -53,14 +61,16 @@ export class TransactionHistoryService {
 
   public async createTransactionHistory(
     dto: CreateTransactionHistoryRequestDTO,
+    request: Request,
   ) {
+    const loggedUser: User = request['user'];
     const inputTagList = await this.tagHistoryService.findByTagHistoryId(
       dto.listInputTagId,
     );
     const outputTagList = await this.tagHistoryService.findByTagHistoryId(
       dto.listOutputTagId,
     );
-    const user = await this.userService.findById(dto.userId);
+    const user = await this.userService.findById(loggedUser.id);
     const transactionId = await this.dataSource.transaction(async (manager) => {
       const entity = manager.create(TransactionHistory, { ...dto, user });
       const transactionHistory = await manager.save(entity);
@@ -179,7 +189,7 @@ export class TransactionHistoryService {
 
   private createTransactionHistoryDTO(
     transaction: Transaction,
-  ): Partial<CreateTransactionHistoryRequestDTO>[] {
+  ): Partial<CreateTransactionHistoryRequestDTO & { userId: number }>[] {
     const {
       description,
       title,
@@ -190,7 +200,8 @@ export class TransactionHistoryService {
     const date = transaction.formatedPeriod();
     const { listInputTagId, listOutputTagId } =
       this.getTagHistoryIdFromTransaction(transactionTag);
-    const request: CreateTransactionHistoryRequestDTO[] = [];
+    const request: (CreateTransactionHistoryRequestDTO & { userId: number })[] =
+      [];
     if (Array.isArray(date)) {
       const start = startOfMonth(new Date());
       const end = endOfMonth(start);
@@ -239,7 +250,10 @@ export class TransactionHistoryService {
     return { listInputTagId, listOutputTagId };
   }
 
-  private buildQuery(dto: FilterTransactionHistoryParamsRequestDTO) {
+  private buildQuery(
+    dto: FilterTransactionHistoryParamsRequestDTO,
+    userId: number,
+  ) {
     const query = this.repository
       .createQueryBuilder('transaction')
       .leftJoin('transaction.transactionTag', 'transactionTagFilter')
@@ -247,7 +261,8 @@ export class TransactionHistoryService {
       .leftJoinAndSelect('transaction.transactionTag', 'inputTransactionTag')
       .leftJoinAndSelect('inputTransactionTag.tagHistory', 'inputTag')
       .leftJoinAndSelect('transaction.transactionTag', 'outputTransactionTag')
-      .leftJoinAndSelect('outputTransactionTag.tagHistory', 'outputTag');
+      .leftJoinAndSelect('outputTransactionTag.tagHistory', 'outputTag')
+      .andWhere(`transaction.user.id = ${userId}`);
 
     const {
       title,

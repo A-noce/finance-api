@@ -5,14 +5,14 @@ import { Request } from 'express';
 export class AuthenticatedGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request: Request = context.switchToHttp().getRequest();
-    const userSessionCookie = request.cookies['user_session'];
+    const signedUserSessionCookie = request.signedCookies['user_session'];
 
-    if (!userSessionCookie) {
+    if (!signedUserSessionCookie) {
       throw new UnauthorizedException('No session cookie found.');
     }
 
     try {
-      const userSession = JSON.parse(userSessionCookie);
+      const userSession = JSON.parse(signedUserSessionCookie);
       request['user'] = userSession; 
       return true;
     } catch (error) {

@@ -1,5 +1,5 @@
 import { AuthenticatedGuard } from "@guards/authenaticated.guard"
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common"
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common"
 import { CreateTagRequestDTO } from "@tag/dtos/create-tag.request.dto"
 import { FindTagParamsRequestDTO } from "@tag/dtos/find-tag-params.request.dto"
 import { TagResponseDTO } from "@tag/dtos/tag.response.dto"
@@ -15,8 +15,8 @@ export class TagController {
 
   @Post()
   @TransformResponse(TagResponseDTO)
-  async createTag(@Body() body: CreateTagRequestDTO){
-    return this.service.createTag(body)
+  async createTag(@Body() body: CreateTagRequestDTO, @Req() request: Request){
+    return this.service.createTag(body,request)
   }
 
   @Patch(':id')

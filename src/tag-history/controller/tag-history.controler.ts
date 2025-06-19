@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Query } from "@nestjs/common"
+import { AuthenticatedGuard } from "@guards/authenaticated.guard"
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from "@nestjs/common"
 import { FindTagHistoryParamsRequestDTO } from "@tag-history/dtos/find-tag-params.request.dto"
 import { TagHistoryResponseDTO } from "@tag-history/dtos/tag-history.response.dto"
 import { TagHistoryService } from "@tag-history/services/tag-history.service"
@@ -7,6 +8,7 @@ import { TransformPaginatedResponse } from "src/interceptors/paginated-transform
 import { TransformResponse } from "src/interceptors/transform-response.interceptor"
 
 @Controller('tag-history')
+@UseGuards(AuthenticatedGuard)
 export class TagHistoryController {
   constructor(private readonly service: TagHistoryService) {}
 
