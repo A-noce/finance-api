@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
@@ -10,14 +11,15 @@ import { UserLoginRequestDTO } from '../dtos/user-login-request.dto';
 import { JwtAuthGuard } from '@guards/jwt.guard';
 import { TransformResponse } from 'src/interceptors/transform-response.interceptor';
 import { UserResponseDTO } from '@auth/dtos/user-response.dto';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @Post('/login')
-  async login(@Body() body: UserLoginRequestDTO){
-    return this.service.singIn(body)
+  async login(@Body() body: UserLoginRequestDTO, @Res({ passthrough: true}) response: Response){
+    return this.service.singIn(body, response)
   }
 
   @Post('/sign-up')
