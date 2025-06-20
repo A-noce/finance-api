@@ -1,5 +1,5 @@
 import {
-    Body,
+  Body,
   Controller,
   Get,
   Post,
@@ -9,34 +9,39 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { UserLoginRequestDTO } from '../dtos/user-login-request.dto';
-import { JwtAuthGuard } from '@guards/jwt.guard';
 import { TransformResponse } from 'src/interceptors/transform-response.interceptor';
 import { UserResponseDTO } from '@auth/dtos/user-response.dto';
 import { Response } from 'express';
+import { AuthenticatedGuard } from '@guards/authenaticated.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
   @Post('/login')
-  async login(@Body() body: UserLoginRequestDTO, @Res({ passthrough: true}) response: Response){
-    return this.service.login(body, response)
+  @TransformResponse(UserResponseDTO)
+  async login(
+    @Body() body: UserLoginRequestDTO,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.service.login(body, response);
   }
 
   @Post('/sign-up')
   @TransformResponse(UserResponseDTO)
-  async signUp(@Body() body: UserLoginRequestDTO){
-    return this.service.signUp(body)
+  async signUp(@Body() body: UserLoginRequestDTO) {
+    return this.service.signUp(body);
   }
 
   @Get('/session')
-  @UseGuards(JwtAuthGuard)
-  async session(@Req() request: Request){
-    return this.service.checkSession(request)
+  @UseGuards(AuthenticatedGuard)
+  async session(@Req() request: Request) {
+    return this.service.checkSession(request);
   }
 
   @Post('/logout')
-  async logout(@Res() response: Response){
-    return this.service.logout(response)
+  @TransformResponse(UserResponseDTO)
+  async logout(@Res({ passthrough: true}) response: Response) {
+    return this.service.logout(response);
   }
 }
