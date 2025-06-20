@@ -5,6 +5,7 @@ import { CreateTagRequestDTO } from '@tag/dtos/create-tag.request.dto';
 import { FindTagParamsRequestDTO } from '@tag/dtos/find-tag-params.request.dto';
 import { UpdateTagRequestDTO } from '@tag/dtos/update-tag.request.dto';
 import { TagEntity } from '@tag/entity/tag.entity';
+import { User } from '@user/entity/user.entity';
 import { DataSource, FindOptionsWhere, In, Not, Repository } from 'typeorm';
 
 @Injectable()
@@ -27,13 +28,14 @@ export class TagService {
     }
   }
 
-  public async createTag(tagDTO: CreateTagRequestDTO) {
+  public async createTag(tagDTO: CreateTagRequestDTO, request: Request) {
     await this.validateTagOptions(tagDTO)
     
+    const loggedUser: User = request['user']
     return this.dataSource.transaction(async (manager) => {
-      const newTag = manager.create(TagEntity, tagDTO)
+      const newTag = manager.create(TagEntity, {...tagDTO, userCreatorId: loggedUser.id})
       const tag = await manager.save(newTag, { transaction: true})
-      const history = manager.create(TagHistory, {...tagDTO, tag})
+      const history = manager.create(TagHistory, {...tagDTO, userCreatorId: loggedUser.id, tag})
       await manager.save(history)
       return tag
     })

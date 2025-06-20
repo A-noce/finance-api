@@ -23,10 +23,6 @@ export class CreateTransactionRequestDTO {
     @IsNotEmpty()
     value: number
 
-    @IsNumber()
-    @IsNotEmpty()
-    userId: number
-
     @IsArray()
     @IsInt({ each: true})
     @IsOptional()

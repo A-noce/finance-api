@@ -1,6 +1,5 @@
-import { JwtAuthGuard } from "@guards/jwt.guard"
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common"
-import { PaginationParamDTO } from "@shared/dtos/PaginationParam.dto"
+import { AuthenticatedGuard } from "@guards/authenaticated.guard"
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common"
 import { CreateTagRequestDTO } from "@tag/dtos/create-tag.request.dto"
 import { FindTagParamsRequestDTO } from "@tag/dtos/find-tag-params.request.dto"
 import { TagResponseDTO } from "@tag/dtos/tag.response.dto"
@@ -10,13 +9,14 @@ import { TransformPaginatedResponse } from "src/interceptors/paginated-transform
 import { TransformResponse } from "src/interceptors/transform-response.interceptor"
 
 @Controller('tag')
+@UseGuards(AuthenticatedGuard)
 export class TagController {
   constructor(private readonly service: TagService) {}
 
   @Post()
   @TransformResponse(TagResponseDTO)
-  async createTag(@Body() body: CreateTagRequestDTO){
-    return this.service.createTag(body)
+  async createTag(@Body() body: CreateTagRequestDTO, @Req() request: Request){
+    return this.service.createTag(body,request)
   }
 
   @Patch(':id')

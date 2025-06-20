@@ -1,8 +1,9 @@
 export const appConfig = () => ({
   application: {
     port: process.env.PORT || 3030,
-    environment: process.env.APP_ENVIRONMENT,
+    environment: process.env.APP_ENVIRONMENT, 
     nodeEnv: process.env.NODE_ENV,
+    signature: process.env.COOKIE_SIGNATUE
   },
   postgres: {
     host: process.env.POSTGRES_HOST,
@@ -15,6 +16,9 @@ export const appConfig = () => ({
     secret: process.env.JWT_SECRET,
     expiration: process.env.JWT_EXPIRATION_TIME_HOUR
   },
+  cookie: {
+    expiration: process.env.COOKIIE_EXPIRATION,
+  }
 });
 
 export type AppConfigType = ReturnType<typeof appConfig>;
