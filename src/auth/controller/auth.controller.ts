@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -30,8 +31,8 @@ export class AuthController {
 
   @Get('/session')
   @UseGuards(JwtAuthGuard)
-  async session(){
-    return this.service.checkSession()
+  async session(@Req() request: Request){
+    return this.service.checkSession(request)
   }
 
   @Post('/logout')
