@@ -42,12 +42,13 @@ export class AuthService {
 
     this.setCookie(user, response);
     return {
-      access_token: this.jwtService.sign({ id: user.id, email: user.email }),
+      email
     };
   }
 
-  public async checkSession() {
-    return true;
+  public async checkSession(request: Request) {
+    const { email }: User = request['user']
+    return { email }
   }
 
   public async logout(response: Response) {
