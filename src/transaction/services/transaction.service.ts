@@ -12,6 +12,7 @@ import { TransactionTag } from '@transaction-tag/entity/transaction-tag.entity';
 import { UserService } from '@user/services/user.service';
 import { TransactionResponseDTO } from '@transaction/dtos/transaction.response.dto';
 import { ResponseDTO } from '@shared/dtos/ResponseDTO';
+import { User } from '@user/entity/user.entity';
 
 @Injectable()
 export class TransactionService {
@@ -30,8 +31,15 @@ export class TransactionService {
     });
   }
 
-  public async findByParam(param: FilterTransactionParamsRequestDTO) {
-    const [data, total] = await this.buildQuery(param).getManyAndCount();
+  public async findByParam(
+    param: FilterTransactionParamsRequestDTO,
+    request: Request,
+  ) {
+    const loggedUser: User = request['user'];
+    const [data, total] = await this.buildQuery(
+      param,
+      loggedUser.id,
+    ).getManyAndCount();
     return new ResponseDTO().setBody({
       data: data.map(TransactionResponseDTO.toDTO),
       total,
@@ -45,12 +53,16 @@ export class TransactionService {
     return { data: data.map(TransactionResponseDTO.toDTO), total };
   }
 
-  public async createTransaction(dto: CreateTransactionRequestDTO) {
+  public async createTransaction(
+    dto: CreateTransactionRequestDTO,
+    request: Request,
+  ) {
+    const loggedUser: User = request['user'];
     const inputTagList = await this.tagService.findTagList(dto.listInputTagId);
     const outputTagList = await this.tagService.findTagList(
       dto.listOutputTagId,
     );
-    const user = await this.userService.findById(dto.userId);
+    const user = await this.userService.findById(loggedUser.id);
     const transactionId = await this.dataSource.transaction(async (manager) => {
       const entity = manager.create(Transaction, { ...dto, user });
       const transaction = await manager.save(entity);
@@ -100,21 +112,16 @@ export class TransactionService {
     await Promise.all(promiseList);
   }
 
-  private buildQuery(dto: FilterTransactionParamsRequestDTO) {
+  private buildQuery(dto: FilterTransactionParamsRequestDTO, userId: number) {
     const query = this.repository
       .createQueryBuilder('transaction')
       .leftJoin('transaction.transactionTag', 'transactionTagFilter')
       .leftJoin('transactionTagFilter.tag', 'tagFilter')
-      .leftJoinAndSelect(
-        'transaction.transactionTag',
-        'inputTransactionTag',
-      )
+      .leftJoinAndSelect('transaction.transactionTag', 'inputTransactionTag')
       .leftJoinAndSelect('inputTransactionTag.tag', 'inputTag')
-      .leftJoinAndSelect(
-        'transaction.transactionTag',
-        'outputTransactionTag',
-      )
-      .leftJoinAndSelect('outputTransactionTag.tag', 'outputTag');
+      .leftJoinAndSelect('transaction.transactionTag', 'outputTransactionTag')
+      .leftJoinAndSelect('outputTransactionTag.tag', 'outputTag')
+      .andWhere(`transaction.user.id = ${userId}`);
 
     const {
       title,
@@ -152,7 +159,7 @@ export class TransactionService {
       query.andWhere(
         `inputTag.id IN (:...listInputTagId) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.INPUT}'`,
         {
-          listInputTagId
+          listInputTagId,
         },
       );
     }
@@ -161,7 +168,7 @@ export class TransactionService {
       query.andWhere(
         `outputTag.id IN (:...listOutputTagId) AND inputTransactionTag.transactionType = '${TransactionTypeEnum.OUTPUT}'`,
         {
-          listOutputTagId
+          listOutputTagId,
         },
       );
     }

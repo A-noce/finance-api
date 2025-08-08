@@ -13,14 +13,18 @@ export function IsPeriodValueCorrect(validationOptions?: ValidationOptions) {
       propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, _args: ValidationArguments) {
-          if (typeof value === 'string' && /^(0?[1-9]|[12][0-9]|3[01])$/.test(value)) {
+        validate(value: string, _args: ValidationArguments) {
+          if (/^(0?[1-9]|[12][0-9]|3[01])$/.test(value)) {
             return true;
           }
 
+          const weekDaysName = Object.keys(WeekDay).filter(
+            (k: number | string) => isNaN(Number(k)),
+          );
+
           if (
-            Array.isArray(value) &&
-            value.every((v) => Object.values(WeekDay).includes(v))
+            /,/g.test(value) &&
+            value.split(',').every((v) => weekDaysName.includes(v))
           ) {
             return true;
           }
@@ -29,7 +33,10 @@ export function IsPeriodValueCorrect(validationOptions?: ValidationOptions) {
         },
 
         defaultMessage(_args: ValidationArguments) {
-          return `Value must be a valid date (1 to 31) or an array of ${Object.values(WeekDay).join(',')}`
+          const weekDaysName = Object.keys(WeekDay).filter(
+            (k: number | string) => isNaN(Number(k)),
+          );
+          return `Value must be a valid date (1 to 31) or an array string  of ${weekDaysName.join(',')}`;
         },
       },
     });

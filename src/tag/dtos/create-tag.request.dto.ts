@@ -1,7 +1,5 @@
 import {
-  IsEmail,
   IsNotEmpty,
-  IsNumber,
   IsString,
   Matches,
 } from 'class-validator';
@@ -21,8 +19,4 @@ export class CreateTagRequestDTO {
     message: 'The color must be a valid HEX code',
   })
   color: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  userCreatorId: number;
 }

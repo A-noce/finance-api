@@ -1,4 +1,4 @@
-import { JwtAuthGuard } from '@guards/jwt.guard';
+import { AuthenticatedGuard } from '@guards/authenaticated.guard';
 import {
   Body,
   Controller,
@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { CreateTransactionRequestDTO } from '@transaction/dtos/create-transaction.request.dto';
@@ -17,13 +18,14 @@ import { TransactionService } from '@transaction/services/transaction.service';
 import { TransformResponse } from 'src/interceptors/transform-response.interceptor';
 
 @Controller('transaction')
+@UseGuards(AuthenticatedGuard)
 export class TransactionController {
   constructor(private readonly service: TransactionService) {}
 
   @Post()
   @TransformResponse(TransactionResponseDTO)
-  async createTag(@Body() body: CreateTransactionRequestDTO) {
-    return this.service.createTransaction(body);
+  async createTag(@Body() body: CreateTransactionRequestDTO, @Req() request: Request) {
+    return this.service.createTransaction(body, request);
   }
 
   @Patch(':id')
@@ -36,8 +38,8 @@ export class TransactionController {
   }
 
   @Get('filter')
-  async getTagFiltered(@Query() param: FilterTransactionParamsRequestDTO) {
-    return this.service.findByParam(param);
+  async getTagFiltered(@Query() param: FilterTransactionParamsRequestDTO, @Req() request: Request) {
+    return this.service.findByParam(param, request);
   }
 
   @Get(':id')

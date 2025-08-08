@@ -26,10 +26,6 @@ export class CreateTransactionHistoryRequestDTO {
   @IsNotEmpty()
   value: number;
 
-  @IsNumber()
-  @IsNotEmpty()
-  userId: number;
-
   @IsArray()
   @IsInt({ each: true })
   @ArrayMinSize(1)
