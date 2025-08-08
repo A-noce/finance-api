@@ -17,7 +17,7 @@ export const appConfig = () => ({
     expiration: process.env.JWT_EXPIRATION_TIME_HOUR
   },
   cookie: {
-    expiration: process.env.COOKIIE_EXPIRATION,
+    expiration: Number(process.env.COOKIE_EXPIRATION_IN_HOUR || 10) *60 *60 *1000,
   }
 });
 
